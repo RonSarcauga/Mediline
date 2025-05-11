@@ -1,18 +1,24 @@
+import React, { useState, useEffect, useRef } from 'react';
 import BaseIcon from '../General/BaseIcon';
 import CommonIcon from '../General/CommonIcon';
 import Container, { ItemGroup } from '../General/Container';
 import InputBar from '../General/InputBar';
-import { chatLogFetch } from '../../viewModels/Chatbox-axios';
-import React, { useRef, useEffect, useState } from "react";
+import io from 'socket.io-client';
 
-
-import { patientDashboardData} from '../../assets/js/const';
-//adjust this line to have better data in const.js
-const Chatbox = ({ user, data, onSendMessage }) => {
-    const { patient, doctor, log: initial_log} = data;
-    const [log, setLog] = useState(initial_log);
-    const [message, setMessage] = useState('');
+const Chatbox = ({ user, data, appointmentId }) => {
+    const { patient, doctor } = data;
+    const [messages, setMessages] = useState([]);
+    const [inputMessage, setInputMessage] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const chatContainerRef = useRef(null);
+    const socketRef = useRef(null);
+
+    //JSON format for message to send to socket server
+    var chatMessage = {
+        appointment_id: appointmentId,
+        message: inputMessage,
+        user_id: user
+    }
 
     let recipient = doctor;
     let messenger = patient;
@@ -24,32 +30,53 @@ const Chatbox = ({ user, data, onSendMessage }) => {
         isPatient = true;
     }
 
-    //scrolls to bottom of chat when message is sent
+    const socket = io("https://cs-490-mediline-backend-1021109447710.us-central1.run.app/chat");
+    /*socket.on('join', () => {
+        console.log(`Connected to socket server with ID:, ${appointmentId}`);
+    })*/
+   socket.emit('join', {"appointment_id": 1})
+   //socket.on('message', chatMessage)
+
+    /*useEffect(() => {
+        socketRef.current = io("https://cs-490-mediline-backend-1021109447710.us-central1.run.app/chat");
+
+        socketRef.current.emit('join', appointmentId)
+
+        socket.on('join', () => {
+            console.log(`Connected to socket server with ID:, ${appointmentId}`);
+        })
+    })*/
+
+
+    //jumps to bottom of chat container when new messages are added
     useEffect(() => {
         if (chatContainerRef.current) {
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
-    }, [log]);
+    }, [messages]);
 
-    const handleSendMessage = () => {
-        if (message.trim() === '') return;
+    const sendMessage = () => {
+        if (inputMessage.trim() === '') return; // Prevent sending empty messages
+        chatMessage.message = inputMessage; //does this need to be changed?
+        socket.emit('message', chatMessage)
+    }
 
-        // Add the new message to the log
-        const newMessage = [user, message];
-        setLog([...log, newMessage]);
-        
-        // clear input field
-        setMessage('');
+    const handleInputChange = (e) => {
+        setInputMessage(e.target.value);
+    };
 
-        if (onSendMessage) {
-            onSendMessage(user, message, newLog);
+    //handle key press for sending message
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter') {
+            sendMessage();
         }
     };
 
-    const handleKeyPress = (e) => {
-        if (e.key === 'Enter') {
-            handleSendMessage();
-        }
+    //timestamp formatting
+    const formatTime = (timestamp) => {
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
     return (
@@ -68,13 +95,12 @@ const Chatbox = ({ user, data, onSendMessage }) => {
                             items={[
                                 <ItemGroup
                                     axis={false}
-                                    stretch={true} //text does not stack,
+                                    stretch={true}
                                     fitParent={true}
                                     items={[
                                         <div className="overlay-container">
-                                            <img src="public/img/person-icon.svg" width="40" height="40" />
+                                            <img src="public/img/person-icon.svg" width="40" height="40" alt="Profile" />
                                         </div>,
-                                        //determines the sender role based on isPatient
                                         <div className="pl-2 pt-2 font-medium">
                                             {isPatient ? recipient : "Dr. " + recipient}
                                         </div>
@@ -83,13 +109,13 @@ const Chatbox = ({ user, data, onSendMessage }) => {
                             ]}
                         />
                         <Container
-                            customClass="chat-container overflow-y-visible"
+                            customClass="chat-container"
                             content={[
                                 <div
                                     ref={chatContainerRef}
-                                    className="p-1"
+                                    className="overflow-y-visible p-1"
                                     style={{
-                                        maxHeight: "200px",
+                                        maxHeight: "300px",
                                         overflowY: "auto",
                                         display: "flex",
                                         flexDirection: "column",
@@ -97,24 +123,39 @@ const Chatbox = ({ user, data, onSendMessage }) => {
                                         borderRadius: "10px",
                                     }}
                                 >
-                                    {log.map(([sender, message], index) => (
-                                        <div
-                                            key={index}
-                                            style={{
-                                                alignSelf: sender === user ? "flex-end" : "flex-start",
-                                                backgroundColor: sender === user ? "#5695DD" : "#C5D8E3",
-                                                padding: "0.75rem 1rem",
-                                                borderRadius: "20px",
-                                                maxWidth: "70%",
-                                            }}
-                                        >
-                                            <strong style={{ display: "block", fontSize: "0.85rem", marginBottom: "0.3rem" }}>
-                                                {sender === 0 ? patient.name : doctor.name}
-                                            </strong>
-                                            {message}
-                                        </div>
-                                    ))}
-                                </div>,
+                                    {isLoading && messages.length === 0 ? (
+                                        <div className="text-center py-3">Loading messages...</div>
+                                    ) : messages.length === 0 ? (
+                                        <div className="text-center py-3">Don't be shy...</div>
+                                    ) : (
+                                        messages.map((msg, index) => (
+                                            <div
+                                                key={msg.messageId || index}
+                                                style={{
+                                                    alignSelf: msg.sender === user ? "flex-end" : "flex-start",
+                                                    backgroundColor: msg.sender === user ? "#5695DD" : "#C5D8E3",
+                                                    padding: "0.75rem 1rem",
+                                                    borderRadius: "20px",
+                                                    maxWidth: "70%",
+                                                    position: "relative"
+                                                }}
+                                            >
+                                                <strong style={{ display: "block", fontSize: "0.85rem", marginBottom: "0.3rem" }}>
+                                                    {msg.sender === 0 ? patient.name : doctor.name}
+                                                </strong>
+                                                <div>{msg.message}</div>
+                                                <div style={{
+                                                    fontSize: "0.7rem",
+                                                    opacity: 0.8,
+                                                    textAlign: "right",
+                                                    marginTop: "0.3rem"
+                                                }}>
+                                                    {formatTime(msg.timestamp)}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
                             ]}
                         />
 
@@ -125,19 +166,21 @@ const Chatbox = ({ user, data, onSendMessage }) => {
                             axis={true}
                             items={[
                                 <div className="br-md bg-white p-3 input-bar d-flex align-items-center justify-content-space-between">
-                                    <input
+                                    <input id="messageInput"
                                         type="text"
                                         placeholder="Type a message"
                                         className="bg-transparent pl-4 py-2 stretch text-black"
-                                        value={message}
-                                        onChange={(e) => setMessage(e.target.value)}
+                                        value={inputMessage}
+                                        onChange={handleInputChange}
                                         onKeyPress={handleKeyPress}
+                                        disabled={isLoading}
                                     />
-                                    <button 
+                                    <button
                                         className="bg-transparent border-0 br-sm d-flex justify-content-end"
-                                        onClick={handleSendMessage}
+                                        onClick={sendMessage}
+                                        disabled={isLoading || !inputMessage.trim()}
                                     >
-                                        <img src="public/img/send-icon.svg" width="40" height="30" />
+                                        <img src="public/img/send-icon.svg" width="40" height="30" alt="Send" />
                                     </button>
                                 </div>
                             ]}

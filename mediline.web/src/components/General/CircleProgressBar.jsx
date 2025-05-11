@@ -38,7 +38,7 @@ function CircleProgressBar({
                     strokeWidth="15px"
                     r={radius}
                     stroke={progressColor}
-                    strokeWidth={strokeWidth}
+                    //strokeWidth={strokeWidth}
                     className="circle-progress"
                     style={{
                         strokeDasharray: dashArray,

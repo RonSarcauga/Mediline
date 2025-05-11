@@ -1008,7 +1008,7 @@ export const vitalHistoryList = [
 export const chatlog = {
     patient: "Luke Patterson",
     doctor: "Jacob Clifford",
-    log: [
+    /*log: [
         [0, "Hi Dr. Clifford, I've been having some sharp pain in my lower back since yesterday afternoon."],
         [1, "Hi Luke, sorry to hear that. Can you describe the pain? Is it constant or does it come and go?"],
         [0, "It comes and goes, mostly when I move or twist my torso. Sitting still isn’t too bad."],
@@ -1019,7 +1019,7 @@ export const chatlog = {
         [1, "That could definitely be the cause. Sounds like a muscle strain. I recommend rest, ice packs, and over-the-counter ibuprofen for now."],
         [0, "Alright, thanks. Should I avoid exercise for the next few days?"],
         [1, "Yes, avoid strenuous activity. If the pain persists for more than 5 days or gets worse, we’ll schedule a follow-up."]
-      ]
+      ]*/
 };
 //  const { patientCount, servingP, appointmentCount, pendingCount, invoices, patientsToday, appointmentsToday} = doctorDashboardData;
 export const doctorDashboardData = {

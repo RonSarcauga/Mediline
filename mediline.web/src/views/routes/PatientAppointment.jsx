@@ -8,7 +8,6 @@ import Chatbox from '../../components/Dashboard/Chatbox';
 import { bookingInfo, patientDashboardData } from '../../assets/js/const';
 import AccordionList from '../../components/General/Accordion';
 import {doctorAppointmentData, chatlog} from '../../assets/js/const';
-import SharedChatBox from '../../components/Dashboard/SharedChatBox';
 
 const PatientAppointment = () => {
   const { doctor, checkout, appointments, user } = patientDashboardData;
@@ -202,7 +201,7 @@ const PatientAppointment = () => {
                                     </>
                                   ]}
                                 />*/}
-                               <Chatbox user={0} data={log}></Chatbox>
+                               <Chatbox user={0} data={log} appointmentId={1}></Chatbox>
                                 
                                 {/*(<ItemGroup
                                   customClass="p-4 bg-neutral-50 br-bottom-md"

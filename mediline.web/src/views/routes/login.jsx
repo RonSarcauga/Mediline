@@ -176,7 +176,7 @@ export default function Login() {
                                                                         <Button
                                                                             customClass="bg-0"
                                                                             content={[
-                                                                                <p className=" text-decoration-none font-regular text-neutral-1100">
+                                                                                <p id="signin" className=" text-decoration-none font-regular text-neutral-1100">
                                                                                     Sign In
                                                                                 </p>
                                                                             ]}

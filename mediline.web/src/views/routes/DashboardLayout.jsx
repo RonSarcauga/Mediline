@@ -213,6 +213,7 @@ function DashboardLayout() {
                                                                                     offsetX={-10}
                                                                                     triggerLabel={[
                                                                                         <BaseIcon
+                                                                                            id="user-icon"
                                                                                             height="50px"
                                                                                             width="50px"
                                                                                             fillColor='none'
@@ -237,6 +238,7 @@ function DashboardLayout() {
                                                                                     ]}
                                                                                     menuItems={[
                                                                                         <ItemGroup
+                                                                                        id="logout"
                                                                                             axis={false}
                                                                                             stretch={true}
                                                                                             isClickable={true}
