@@ -8,15 +8,15 @@ import io from 'socket.io-client';
 const Chatbox = ({ user, data, appointmentId }) => {
     const { patient, doctor } = data;
     const [messages, setMessages] = useState([]);
-    const [inputMessage, setInputMessage] = useState('');
+    const [messageText, setMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isConnected, setIsConnected] = useState(false)
     const chatContainerRef = useRef(null);
-    const socketRef = useRef(null);
 
     //JSON format for message to send to socket server
     var chatMessage = {
         appointment_id: appointmentId,
-        message: inputMessage,
+        message: messageText,
         user_id: user
     }
 
@@ -30,23 +30,47 @@ const Chatbox = ({ user, data, appointmentId }) => {
         isPatient = true;
     }
 
-    const socket = io("https://cs-490-mediline-backend-1021109447710.us-central1.run.app/chat");
-    /*socket.on('join', () => {
-        console.log(`Connected to socket server with ID:, ${appointmentId}`);
-    })*/
-   socket.emit('join', {"appointment_id": 1})
-   //socket.on('message', chatMessage)
+    const socket = io("https://cs-490-mediline-backend-1021109447710.us-central1.run.app/chat", {
+        autoConnect: false,
+    });
 
-    /*useEffect(() => {
-        socketRef.current = io("https://cs-490-mediline-backend-1021109447710.us-central1.run.app/chat");
+    useEffect(() => {
+        const onConnect = () => {
+            socket.connect()
+            setIsConnected(true);
+            socket.emit('join', { "appointment_id": 1 })
+        };
 
-        socketRef.current.emit('join', appointmentId)
+        const onDisconnect = () => {
+            socket.disconnect();
+            setIsConnected(false);
+        };
 
-        socket.on('join', () => {
-            console.log(`Connected to socket server with ID:, ${appointmentId}`);
-        })
-    })*/
+        const onMessageEvent = (message) => {
+            setMessage((prevMessage) => [...prevMessage, message]);
+            console.log("New message sent:", message);
+        };
 
+        const onSendMessage = (message) => {
+            if (messageText.trim() === '') return; // Prevent sending empty messages
+            chatMessage.message = message; //does this need to be changed?
+            //depending on new implementation, the user_id might need to be updated depending on who is sending
+            //chatMessage.user_id = user 
+            socket.emit('message', chatMessage)
+        };
+
+        socket.on('connect', onConnect);
+        socket.on('disconnect', onDisconnect);
+        socket.on('newMessage', onMessageEvent);
+        socket.on('sendMessage', onSendMessage);
+
+        return () => {
+            socket.off('connect', onConnect);
+            socket.off('disconnect', onDisconnect);
+            socket.off('newMessage', onMessageEvent);
+            socket.off('sendMessage', onSendMessage);
+            };
+    }, []);
 
     //jumps to bottom of chat container when new messages are added
     useEffect(() => {
@@ -55,20 +79,14 @@ const Chatbox = ({ user, data, appointmentId }) => {
         }
     }, [messages]);
 
-    const sendMessage = () => {
-        if (inputMessage.trim() === '') return; // Prevent sending empty messages
-        chatMessage.message = inputMessage; //does this need to be changed?
-        socket.emit('message', chatMessage)
-    }
-
     const handleInputChange = (e) => {
-        setInputMessage(e.target.value);
+        setMessage(e.target.value);
     };
 
     //handle key press for sending message
     const handleKeyPress = (e) => {
         if (e.key === 'Enter') {
-            sendMessage();
+            onSendMessage();
         }
     };
 
@@ -115,7 +133,7 @@ const Chatbox = ({ user, data, appointmentId }) => {
                                     ref={chatContainerRef}
                                     className="overflow-y-visible p-1"
                                     style={{
-                                        maxHeight: "300px",
+                                        maxHeight: "400px",
                                         overflowY: "auto",
                                         display: "flex",
                                         flexDirection: "column",
@@ -126,7 +144,7 @@ const Chatbox = ({ user, data, appointmentId }) => {
                                     {isLoading && messages.length === 0 ? (
                                         <div className="text-center py-3">Loading messages...</div>
                                     ) : messages.length === 0 ? (
-                                        <div className="text-center py-3">Don't be shy...</div>
+                                        <button className="border-0 br-sm" onClick={onConnect}>Join Chat</button>
                                     ) : (
                                         messages.map((msg, index) => (
                                             <div
@@ -170,15 +188,15 @@ const Chatbox = ({ user, data, appointmentId }) => {
                                         type="text"
                                         placeholder="Type a message"
                                         className="bg-transparent pl-4 py-2 stretch text-black"
-                                        value={inputMessage}
+                                        value={messageText}
                                         onChange={handleInputChange}
                                         onKeyPress={handleKeyPress}
                                         disabled={isLoading}
                                     />
                                     <button
                                         className="bg-transparent border-0 br-sm d-flex justify-content-end"
-                                        onClick={sendMessage}
-                                        disabled={isLoading || !inputMessage.trim()}
+                                        //onClick={onSendMessage}
+                                        disabled={isLoading || !messageText.trim()}
                                     >
                                         <img src="public/img/send-icon.svg" width="40" height="30" alt="Send" />
                                     </button>
@@ -192,4 +210,7 @@ const Chatbox = ({ user, data, appointmentId }) => {
     );
 };
 
+const connectChat = ({ connect }) => {
+    console.log("erm im waiting")
+}
 export default Chatbox;

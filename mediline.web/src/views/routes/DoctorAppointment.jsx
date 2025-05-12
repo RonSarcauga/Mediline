@@ -188,7 +188,7 @@ const DoctorAppointment = () => {
                           headerClass="p-5"
                           header={
                             <>
-                              <Chatbox user={1} data={log}></Chatbox>
+                              <Chatbox user={1} data={log} appointmentId={1}></Chatbox>
                             </>
                           }
                         />
